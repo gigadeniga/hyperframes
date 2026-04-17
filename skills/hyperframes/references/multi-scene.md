@@ -112,8 +112,30 @@ Dispatch one subagent per scene, running in parallel (concurrently with the scaf
 - The global animation rules from the prompt
 - That scene's specific prompt section only
 - The scene number `N` and start time — used for the `s{N}-` prefix and `var SN = {start_time};`
+- **The persistent-subject choreography block for this scene**, if any — see below
 
 Each subagent focuses its entire context on making ONE scene visually rich: parallax layers, micro-animations, kinetic typography, ambient motion, background decoratives. No boilerplate, no other scenes. **Each subagent must write to a file** — text returned in conversation is not accessible to the assembly agent.
+
+### Persistent-subject choreography contract
+
+If the expansion identified a persistent subject (R4 applies), the expansion will have produced a choreography plan with one block per scene. See [`prompt-expansion.md` → Pre-plan the persistent-subject choreography](./prompt-expansion.md).
+
+When dispatching scene subagents, **the orchestrator must pass each subagent its scene's choreography block** along with these instructions:
+
+1. **The persistent subject lives in a shared overlay layer outside your scene container.** Do NOT author the subject inside your scene fragment. The scaffold owns the subject's DOM + timeline.
+2. **Your scene's layout must respect the reserved region.** No typography, no decoratives, no scene chrome may be placed inside the reserved region specified for your scene. The subject will occupy it.
+3. **Design your scene's content around the element's role in this scene.** If the role is _focal subject_, your scene chrome is thin margins and light labels around it. If _background anchor_, your chrome fills the frame and the subject is a small corner anchor. If _data-point in a row_, your scene includes the row structure and reserves a slot for the subject.
+4. **Do NOT animate the persistent subject in your GSAP timeline.** The scaffold authors the subject's tweens across scene boundaries on the `tl` timeline. Your scene tweens animate the scene's own content only.
+5. **Your scene may reference the subject's position as a fixed anchor** — e.g., "the label line points at the subject's center at {x, y}." Treat it like a pre-placed element the scaffold will render for you.
+
+The scaffold's responsibility:
+
+1. Create the subject's DOM in the shared overlay layer outside `.scene` containers.
+2. Author tweens on the subject that move it between choreography positions across scene boundaries — the transitions' timing determines when the subject starts its move.
+3. Use `xPercent: -50, yPercent: -50` on the subject so position coords are center coords.
+4. Coordinate scene crossfades with subject moves so the subject's motion spans the crossfade midpoint (so the viewer tracks one element through the cut).
+
+Without this contract: scene subagents place their content where they think looks good, then the scaffold animates the subject into a region that was already filled — producing the size-collision and semantic-mismatch failures observed in prior evals.
 
 ## Phase 2b: Streaming evaluation
 
